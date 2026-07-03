@@ -9,20 +9,20 @@ const journalForm = document.getElementById('journal-form');
 const formMessage = document.getElementById('form-message');
 const submitBtn = document.getElementById('submit-btn');
 const submittedBanner = document.getElementById('submitted-banner');
-const historyCalendar = document.getElementById('history-calendar');
-const historyDetail = document.getElementById('history-detail');
+const timelineStrip = document.getElementById('timeline-strip');
+const timelinePrev = document.getElementById('timeline-prev');
+const timelineNext = document.getElementById('timeline-next');
+const entryDateLabel = document.getElementById('entry-date-label');
 const questionsContainer = document.getElementById('questions-container');
 const userLabel = document.getElementById('user-label');
-const statDay = document.getElementById('stat-day');
-const statRemaining = document.getElementById('stat-remaining');
-const statCompleted = document.getElementById('stat-completed');
-const studyStatus = document.getElementById('study-status');
-const todayHeading = document.getElementById('today-heading');
-const todayCard = document.getElementById('today-card');
+
+const VISIBLE_DAYS = 7;
 
 const participantId = getParticipantId();
 let state = null;
-let selectedCalendarDate = null;
+let selectedDate = null;
+let timelineWindowStart = 0;
+let studyDates = [];
 
 if (!participantId) {
   document.body.innerHTML = '<p style="padding:24px;">Invalid journal link.</p>';
@@ -67,56 +67,94 @@ function hasAnswers(answers) {
   return Object.entries(answers).some(([key, v]) => !key.endsWith('_other') && String(v || '').trim() !== '');
 }
 
+function getStudyDates(progress) {
+  const dates = [];
+  const start = parseIsoDate(progress.entryStartDate || progress.studyStartDate);
+  const end = parseIsoDate(progress.studyEndDate);
+  for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+    dates.push(toIsoDate(new Date(d)));
+  }
+  return dates;
+}
+
+function getStudyDay(iso) {
+  const fromHistory = state?.history.find((h) => h.date === iso)?.studyDay;
+  if (fromHistory != null) return fromHistory;
+
+  if (!state?.progress?.studyStartDate) return null;
+  const start = parseIsoDate(state.progress.studyStartDate);
+  const current = parseIsoDate(iso);
+  const day = Math.floor((current - start) / 86400000) + 1;
+  if (day < 1 || day > state.progress.studyDurationDays) return null;
+  return day;
+}
+
+function getEntryForDate(iso) {
+  if (iso === state.today && state.todayEntry) return state.todayEntry;
+  return state.history.find((h) => h.date === iso) || null;
+}
+
 function canEditDate(isoDate) {
   if (!state?.today || !isoDate) return false;
+  const entryStart = state.progress.entryStartDate || state.progress.studyStartDate;
+  if (isoDate < entryStart) return false;
   if (isoDate > state.today) return false;
   if (isoDate > state.progress.studyEndDate) return false;
   return true;
 }
 
-function canEditToday() {
-  const status = state?.progress?.status;
-  return (status === 'active' || status === 'not_started') && canEditDate(state.today);
+function canEditSelected() {
+  return canEditDate(selectedDate);
 }
 
-function renderProgress(progress, history) {
-  const completed = history.filter((h) => hasAnswers(h.answers)).length;
-  statDay.textContent = progress.currentDay ?? '—';
-  statRemaining.textContent = progress.daysRemaining;
-  statCompleted.textContent = completed;
+function formatTimelineWeekday(d) {
+  return d.toLocaleDateString(undefined, { weekday: 'short' }).toUpperCase();
+}
 
-  studyStatus.className = 'journal-status';
-  if (progress.status === 'ended') {
-    studyStatus.classList.add('journal-status--ended');
-    studyStatus.textContent = `Study ended ${formatDateLabel(progress.studyEndDate)}. You can still review and update past entries below.`;
-    submitBtn.disabled = true;
-  } else if (progress.status === 'not_started') {
-    studyStatus.classList.add('journal-status--plain');
-    studyStatus.textContent = `Study period: ${formatDateLabel(progress.studyStartDate)} — ${formatDateLabel(progress.studyEndDate)}`;
-    submitBtn.disabled = !canEditToday();
-  } else {
-    studyStatus.classList.add('journal-status--active');
-    studyStatus.textContent = `Day ${progress.currentDay} of ${progress.studyDurationDays} · ${progress.daysRemaining} day${progress.daysRemaining === 1 ? '' : 's'} remaining`;
-    submitBtn.disabled = !canEditToday();
-  }
+function formatTimelineMonthDay(d) {
+  return `${d.getMonth() + 1}/${d.getDate()}`;
+}
 
-  todayHeading.textContent = `Today's entry — ${formatDateLabel(progress.today)}`;
+function getWeekStartIndex(dateIndex) {
+  return Math.floor(dateIndex / VISIBLE_DAYS) * VISIBLE_DAYS;
+}
+
+function getMaxWeekStart() {
+  if (!studyDates.length) return 0;
+  return getWeekStartIndex(studyDates.length - 1);
+}
+
+function ensureDateVisible(iso) {
+  const idx = studyDates.indexOf(iso);
+  if (idx < 0) return;
+  timelineWindowStart = getWeekStartIndex(idx);
 }
 
 function updateSubmittedBanner() {
   if (!submittedBanner) return;
-  if (state?.todayEntry && hasAnswers(state.todayEntry.answers)) {
+  const entry = getEntryForDate(selectedDate);
+  if (entry && hasAnswers(entry.answers)) {
     submittedBanner.hidden = false;
-    submittedBanner.textContent = "You already submitted today's entry. You can update your answers below.";
+    const label = selectedDate === state.today ? "today's entry" : 'this entry';
+    submittedBanner.textContent = `You already submitted ${label}. You can update your answers below.`;
   } else {
     submittedBanner.hidden = true;
   }
 }
 
-function updateTodaySubmitLabel() {
+function updateSubmitLabel() {
   if (!submitBtn) return;
-  const hasSubmitted = state?.todayEntry && hasAnswers(state.todayEntry.answers);
+  const entry = getEntryForDate(selectedDate);
+  const hasSubmitted = entry && hasAnswers(entry.answers);
   submitBtn.textContent = hasSubmitted ? 'Update entry' : 'Submit';
+  submitBtn.disabled = !canEditSelected();
+}
+
+function updateEntryDateLabel() {
+  if (!entryDateLabel) return;
+  const dayNum = getStudyDay(selectedDate);
+  const dayLabel = dayNum ? `Day ${dayNum} · ` : '';
+  entryDateLabel.textContent = `${dayLabel}${formatDateLabel(selectedDate)}`;
 }
 
 function getGateAnswerFrom(container) {
@@ -151,41 +189,6 @@ function parseMultiselectValue(value) {
   } catch {
     return [];
   }
-}
-
-function formatAnswerLabel(q, answers) {
-  const value = answers?.[q.id];
-  if (value == null || String(value).trim() === '') return '';
-
-  if (q.type === 'yesno') {
-    return value === 'yes' ? 'Yes' : value === 'no' ? 'No' : value;
-  }
-
-  if (q.type === 'select') {
-    if (value === 'other') {
-      const other = answers[`${q.id}_other`] || '';
-      return other ? `Other: ${other}` : 'Other';
-    }
-    const opt = q.options?.find((o) => o.value === value);
-    return opt?.label || value;
-  }
-
-  if (q.type === 'multiselect') {
-    const selected = parseMultiselectValue(value);
-    if (!selected.length) return '';
-    return selected
-      .map((v) => {
-        if (v === 'other') {
-          const other = answers[`${q.id}_other`] || '';
-          return other ? `Other: ${other}` : 'Other';
-        }
-        const opt = q.options?.find((o) => o.value === v);
-        return opt?.label || v;
-      })
-      .join('; ');
-  }
-
-  return String(value);
 }
 
 function renderQuestionInto(container, q, answers, editable) {
@@ -405,15 +408,85 @@ function renderFormInto(container, questions, entryAnswers, editable) {
   updateVisibilityIn(container, questions);
 }
 
-function renderTodayForm() {
+function renderEntryForm() {
+  const entry = getEntryForDate(selectedDate);
   renderFormInto(
     questionsContainer,
     state.questions,
-    state.todayEntry?.answers || {},
-    canEditToday(),
+    entry?.answers || {},
+    canEditSelected(),
   );
+  updateEntryDateLabel();
   updateSubmittedBanner();
-  updateTodaySubmitLabel();
+  updateSubmitLabel();
+}
+
+function selectDate(iso) {
+  if (!studyDates.includes(iso)) return;
+  selectedDate = iso;
+  formMessage.hidden = true;
+  ensureDateVisible(iso);
+  renderTimeline();
+  renderEntryForm();
+}
+
+function renderTimeline() {
+  if (!timelineStrip || !state) return;
+
+  const entriesByDate = Object.fromEntries(
+    state.history.filter((h) => hasAnswers(h.answers)).map((h) => [h.date, h]),
+  );
+  if (state.todayEntry && hasAnswers(state.todayEntry.answers)) {
+    entriesByDate[state.today] = state.todayEntry;
+  }
+
+  const visible = studyDates.slice(timelineWindowStart, timelineWindowStart + VISIBLE_DAYS);
+
+  timelineStrip.innerHTML = visible.map((iso) => {
+    const d = parseIsoDate(iso);
+    const dayNum = getStudyDay(iso);
+    const isSelected = iso === selectedDate;
+    const isToday = iso === state.today;
+    const hasEntry = !!entriesByDate[iso];
+    const isFuture = iso > state.today;
+
+    let cls = 'journal-timeline-day';
+    if (isSelected) cls += ' journal-timeline-day--selected';
+    if (isToday) cls += ' journal-timeline-day--today';
+    if (hasEntry) cls += ' journal-timeline-day--has-entry';
+    if (isFuture) cls += ' journal-timeline-day--future';
+
+    const weekday = formatTimelineWeekday(d);
+    const monthDay = formatTimelineMonthDay(d);
+    const statusLabel = hasEntry
+      ? '<span class="journal-timeline-check" aria-hidden="true">✓</span>'
+      : (dayNum ? `<span class="journal-timeline-study-day">D${dayNum}</span>` : '');
+
+    return `
+      <button type="button" class="${cls}" data-date="${iso}" aria-label="${escapeHtml(formatDateLabel(iso))}${hasEntry ? ' — entry completed' : ''}" aria-pressed="${isSelected}">
+        <span class="journal-timeline-weekday">${escapeHtml(weekday)}</span>
+        <span class="journal-timeline-date">${escapeHtml(monthDay)}</span>
+        ${statusLabel}
+      </button>
+    `;
+  }).join('');
+
+  timelineStrip.querySelectorAll('.journal-timeline-day').forEach((btn) => {
+    btn.addEventListener('click', () => selectDate(btn.dataset.date));
+  });
+
+  if (timelinePrev) {
+    timelinePrev.disabled = timelineWindowStart <= 0;
+  }
+  if (timelineNext) {
+    timelineNext.disabled = timelineWindowStart >= getMaxWeekStart();
+  }
+}
+
+function shiftTimelineWeek(direction) {
+  const maxStart = getMaxWeekStart();
+  timelineWindowStart = Math.max(0, Math.min(maxStart, timelineWindowStart + direction * VISIBLE_DAYS));
+  renderTimeline();
 }
 
 function upsertHistoryRow(date, entry, studyDay) {
@@ -427,6 +500,10 @@ function upsertHistoryRow(date, entry, studyDay) {
   if (idx >= 0) state.history[idx] = row;
   else state.history.unshift(row);
   state.history.sort((a, b) => b.date.localeCompare(a.date));
+
+  if (date === state.today) {
+    state.todayEntry = entry;
+  }
 }
 
 async function saveEntry(date, answers, messageEl, submitButton) {
@@ -444,197 +521,48 @@ async function saveEntry(date, answers, messageEl, submitButton) {
     }, participantId);
 
     state.progress = data.progress;
-    const studyDay = date === state.today
-      ? data.progress.currentDay
-      : state.history.find((h) => h.date === date)?.studyDay ?? null;
+    const studyDay = getStudyDay(date) ?? state.history.find((h) => h.date === date)?.studyDay ?? null;
 
     upsertHistoryRow(date, data.entry, studyDay);
+    renderTimeline();
+    renderEntryForm();
 
-    if (date === state.today) {
-      state.todayEntry = data.entry;
-      renderTodayForm();
-    }
-
-    renderProgress(state.progress, state.history);
-    renderCalendar(state.questions, state.history, state.progress);
-
-    if (date === state.today) {
-      showMessage(messageEl, 'Entry submitted. Thank you!', 'success', 3000);
-    } else {
-      showMessage(messageEl, 'Entry updated.', 'success', 3000);
-      openPastEntryEditor(state.history.find((h) => h.date === date));
-    }
-
+    showMessage(messageEl, date === state.today ? 'Entry submitted. Thank you!' : 'Entry updated.', 'success', 3000);
     return true;
   } catch (err) {
     showMessage(messageEl, err.message || 'Could not save entry');
     return false;
   } finally {
-    if (date === state.today ? canEditToday() : canEditDate(date)) {
+    if (canEditDate(date)) {
       submitButton.disabled = false;
     }
   }
 }
 
-function eachStudyDate(progress, fn) {
-  const start = parseIsoDate(progress.studyStartDate);
-  const end = parseIsoDate(progress.studyEndDate);
-  for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
-    fn(toIsoDate(new Date(d)));
-  }
-}
-
-function closePastEditor() {
-  historyDetail.hidden = true;
-  historyDetail.innerHTML = '';
-}
-
-function openPastEntryEditor(entry) {
-  if (!entry) {
-    closePastEditor();
-    return;
-  }
-
-  selectedCalendarDate = entry.date;
-  const editable = canEditDate(entry.date) && entry.date !== state.today;
-  historyDetail.hidden = false;
-  historyDetail.innerHTML = `
-    <div class="journal-history-detail-header">Edit entry — ${escapeHtml(formatDateLabel(entry.date))}</div>
-    <form id="past-entry-form">
-      <div id="past-questions-container"></div>
-      <div id="past-form-message" class="journal-form-message" hidden></div>
-      <div class="journal-actions">
-        <button type="submit" id="past-submit-btn" class="journal-btn journal-btn--primary" ${editable ? '' : 'disabled'}>
-          Update entry
-        </button>
-      </div>
-    </form>
-  `;
-
-  const pastContainer = document.getElementById('past-questions-container');
-  renderFormInto(pastContainer, state.questions, entry.answers || {}, editable);
-
-  const pastForm = document.getElementById('past-entry-form');
-  const pastMessage = document.getElementById('past-form-message');
-  const pastSubmit = document.getElementById('past-submit-btn');
-
-  pastForm.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    pastMessage.hidden = true;
-    if (!editable) return;
-    const answers = collectAnswersFrom(pastContainer, state.questions);
-    await saveEntry(entry.date, answers, pastMessage, pastSubmit);
-  });
-}
-
-function renderCalendar(questions, history, progress) {
-  const withEntries = history.filter((h) => hasAnswers(h.answers));
-  const entriesByDate = Object.fromEntries(withEntries.map((h) => [h.date, h]));
-
-  if (!withEntries.length) {
-    historyCalendar.innerHTML = '<p class="journal-empty">No entries yet.</p>';
-    closePastEditor();
-    return;
-  }
-
-  const months = [];
-  const seen = new Set();
-  const addMonth = (iso) => {
-    const d = parseIsoDate(iso);
-    const key = `${d.getFullYear()}-${d.getMonth()}`;
-    if (!seen.has(key)) {
-      seen.add(key);
-      months.push({ year: d.getFullYear(), month: d.getMonth() });
-    }
-  };
-  eachStudyDate(progress, addMonth);
-  withEntries.forEach((h) => addMonth(h.date));
-  months.sort((a, b) => a.year - b.year || a.month - b.month);
-
-  const weekdayLabels = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-
-  historyCalendar.innerHTML = months.map(({ year, month }) => {
-    const monthName = new Date(year, month, 1).toLocaleDateString(undefined, { month: 'long', year: 'numeric' });
-    const firstDay = new Date(year, month, 1);
-    const lastDay = new Date(year, month + 1, 0);
-    const startPad = firstDay.getDay();
-    const daysInMonth = lastDay.getDate();
-
-    let cells = '';
-    for (let i = 0; i < startPad; i++) {
-      cells += '<div class="journal-cal-cell journal-cal-cell--empty"></div>';
-    }
-
-    for (let day = 1; day <= daysInMonth; day++) {
-      const iso = toIsoDate(new Date(year, month, day));
-      const inStudy = iso >= progress.studyStartDate && iso <= progress.studyEndDate;
-      const isToday = iso === progress.today;
-      const hasEntry = !!entriesByDate[iso];
-      const isSelected = selectedCalendarDate === iso;
-
-      let cls = 'journal-cal-cell';
-      if (hasEntry && isToday) cls += ' journal-cal-cell--has-entry journal-cal-cell--today';
-      else if (hasEntry && iso <= progress.today) cls += ' journal-cal-cell--has-entry';
-      else if (!inStudy) cls += ' journal-cal-cell--out';
-      else if (inStudy && iso < progress.today) cls += ' journal-cal-cell--past';
-      if (isSelected) cls += ' journal-cal-cell--selected';
-
-      const clickable = hasEntry && iso <= progress.today;
-      cells += `<button type="button" class="${cls}" data-date="${iso}" ${clickable ? '' : 'disabled'}>${day}</button>`;
-    }
-
-    return `
-      <div class="journal-cal-month">
-        <div class="journal-cal-month-title">${escapeHtml(monthName)}</div>
-        <div class="journal-cal-weekdays">${weekdayLabels.map((w) => `<span>${w}</span>`).join('')}</div>
-        <div class="journal-cal-grid">${cells}</div>
-      </div>
-    `;
-  }).join('');
-
-  historyCalendar.querySelectorAll('.journal-cal-cell--has-entry').forEach((btn) => {
-    btn.addEventListener('click', () => {
-      const iso = btn.dataset.date;
-      selectedCalendarDate = iso;
-      historyCalendar.querySelectorAll('.journal-cal-cell--selected').forEach((el) => {
-        el.classList.remove('journal-cal-cell--selected');
-      });
-      btn.classList.add('journal-cal-cell--selected');
-
-      if (iso === state.today) {
-        closePastEditor();
-        todayCard?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        return;
-      }
-
-      openPastEntryEditor(entriesByDate[iso]);
-    });
-  });
-
-  if (selectedCalendarDate && selectedCalendarDate !== state.today && entriesByDate[selectedCalendarDate]) {
-    openPastEntryEditor(entriesByDate[selectedCalendarDate]);
-  } else if (selectedCalendarDate === state.today) {
-    closePastEditor();
-  }
-}
+timelinePrev?.addEventListener('click', () => shiftTimelineWeek(-1));
+timelineNext?.addEventListener('click', () => shiftTimelineWeek(1));
 
 journalForm.addEventListener('submit', async (e) => {
   e.preventDefault();
   formMessage.hidden = true;
 
-  if (!canEditToday()) return;
+  if (!canEditSelected()) return;
 
   const answers = collectAnswersFrom(questionsContainer, state.questions);
-  await saveEntry(state.today, answers, formMessage, submitBtn);
+  await saveEntry(selectedDate, answers, formMessage, submitBtn);
 });
 
 async function loadJournal() {
   try {
     state = await apiFetch('/entries', {}, participantId);
     if (state.name) userLabel.textContent = state.name;
-    renderProgress(state.progress, state.history);
-    renderTodayForm();
-    renderCalendar(state.questions, state.history, state.progress);
+
+    studyDates = getStudyDates(state.progress);
+    selectedDate = state.today;
+    ensureDateVisible(selectedDate);
+
+    renderTimeline();
+    renderEntryForm();
   } catch (err) {
     showMessage(formMessage, err.message || 'Could not load journal');
   }

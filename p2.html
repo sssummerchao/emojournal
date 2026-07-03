@@ -18,28 +18,16 @@
       </div>
     </div>
 
-    <div class="journal-card">
-      <h2>Your progress</h2>
-      <div class="journal-progress">
-        <div class="journal-stat">
-          <span class="journal-stat-value" id="stat-day">—</span>
-          <span class="journal-stat-label">Current day</span>
-        </div>
-        <div class="journal-stat">
-          <span class="journal-stat-value" id="stat-remaining">—</span>
-          <span class="journal-stat-label">Days remaining</span>
-        </div>
-        <div class="journal-stat">
-          <span class="journal-stat-value" id="stat-completed">—</span>
-          <span class="journal-stat-label">Entries completed</span>
-        </div>
+    <div class="journal-card" id="entry-card">
+      <div class="journal-timeline-wrap">
+        <button type="button" id="timeline-prev" class="journal-timeline-arrow" aria-label="Previous week">←</button>
+        <div id="timeline-strip" class="journal-timeline-strip"></div>
+        <button type="button" id="timeline-next" class="journal-timeline-arrow" aria-label="Next week">→</button>
       </div>
-      <div id="study-status" class="journal-status journal-status--active"></div>
-    </div>
 
-    <div class="journal-card" id="today-card">
-      <h2 id="today-heading">Today's entry</h2>
+      <p id="entry-date-label" class="journal-entry-date-label"></p>
       <div id="submitted-banner" class="journal-submitted-banner" hidden></div>
+
       <form id="journal-form">
         <div id="questions-container"></div>
         <div id="form-message" class="journal-form-message" hidden></div>
@@ -47,12 +35,6 @@
           <button type="submit" id="submit-btn" class="journal-btn journal-btn--primary">Submit</button>
         </div>
       </form>
-    </div>
-
-    <div class="journal-card">
-      <h2>Past entries</h2>
-      <div id="history-calendar"></div>
-      <div id="history-detail" class="journal-history-detail" hidden></div>
     </div>
   </div>
   <script type="module" src="app.js"></script>
