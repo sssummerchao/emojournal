@@ -9,6 +9,10 @@ export const STUDY_DURATION_DAYS = parseInt(process.env.JOURNAL_STUDY_DAYS || '3
 export const STUDY_START_DATE =
   process.env.JOURNAL_STUDY_START_DATE || '2026-07-07';
 
+/** Earliest date participants can submit entries (includes pre-study days). */
+export const ENTRY_START_DATE =
+  process.env.JOURNAL_ENTRY_START_DATE || '2026-07-02';
+
 /**
  * Daily questions — same every day.
  * Types: text, textarea, yesno, select, multiselect
@@ -228,6 +232,7 @@ export function getStudyProgress(isoDate = getTodayIso()) {
 
   return {
     studyStartDate: STUDY_START_DATE,
+    entryStartDate: ENTRY_START_DATE,
     studyEndDate: endDate,
     studyDurationDays: STUDY_DURATION_DAYS,
     today: isoDate,
@@ -241,6 +246,7 @@ export function getPublicConfig() {
   return {
     questions: QUESTIONS,
     studyStartDate: STUDY_START_DATE,
+    entryStartDate: ENTRY_START_DATE,
     studyEndDate: getStudyEndDate(),
     studyDurationDays: STUDY_DURATION_DAYS,
     participants: PARTICIPANTS.map((p) => ({ id: p.id, name: p.name })),

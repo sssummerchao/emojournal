@@ -1,6 +1,7 @@
 import { requireParticipant } from './_users.js';
 import {
   QUESTIONS,
+  ENTRY_START_DATE,
   getParticipantById,
   getPublicConfig,
   getStudyDayForDate,
@@ -51,6 +52,10 @@ export default async function handler(req, res) {
 
     if (parseDate(entryDate).getTime() > parseDate(today).getTime()) {
       return res.status(400).json({ error: 'You cannot submit an entry for a future date.' });
+    }
+
+    if (parseDate(entryDate).getTime() < parseDate(ENTRY_START_DATE).getTime()) {
+      return res.status(400).json({ error: 'Entries are only available from July 2 onward.' });
     }
 
     if (parseDate(entryDate).getTime() > parseDate(getStudyEndDate()).getTime()) {
