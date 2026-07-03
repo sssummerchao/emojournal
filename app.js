@@ -30,10 +30,24 @@ if (!participantId) {
   loadJournal();
 }
 
-function showMessage(el, text, type = 'error') {
+let messageTimer = null;
+
+function showMessage(el, text, type = 'error', autoHideMs = 0) {
+  if (messageTimer) {
+    clearTimeout(messageTimer);
+    messageTimer = null;
+  }
+
   el.hidden = false;
   el.className = type === 'success' ? 'journal-form-message journal-success' : 'journal-form-message journal-error';
   el.textContent = text;
+
+  if (autoHideMs > 0) {
+    messageTimer = setTimeout(() => {
+      el.hidden = true;
+      messageTimer = null;
+    }, autoHideMs);
+  }
 }
 
 function parseIsoDate(iso) {
@@ -445,9 +459,9 @@ async function saveEntry(date, answers, messageEl, submitButton) {
     renderCalendar(state.questions, state.history, state.progress);
 
     if (date === state.today) {
-      showMessage(messageEl, 'Entry submitted. Thank you!', 'success');
+      showMessage(messageEl, 'Entry submitted. Thank you!', 'success', 3000);
     } else {
-      showMessage(messageEl, 'Entry updated.', 'success');
+      showMessage(messageEl, 'Entry updated.', 'success', 3000);
       openPastEntryEditor(state.history.find((h) => h.date === date));
     }
 
