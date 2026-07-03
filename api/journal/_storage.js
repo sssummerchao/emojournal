@@ -90,3 +90,14 @@ export async function getAllEntries() {
   const store = await loadStore();
   return store.entries;
 }
+
+export async function deleteEntry(userId, date) {
+  const store = await loadStore();
+  if (!store.entries[userId]?.[date]) return false;
+  delete store.entries[userId][date];
+  if (Object.keys(store.entries[userId]).length === 0) {
+    delete store.entries[userId];
+  }
+  await saveStore(store);
+  return true;
+}

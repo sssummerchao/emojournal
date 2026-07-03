@@ -246,18 +246,3 @@ export function getPublicConfig() {
     participants: PARTICIPANTS.map((p) => ({ id: p.id, name: p.name })),
   };
 }
-
-/** All answer keys stored in the database (including _other fields). */
-export function getAllAnswerKeys() {
-  const keys = [];
-  for (const q of QUESTIONS) {
-    keys.push(q.id);
-    if (q.type === 'select' && q.options?.some((o) => o.hasText)) {
-      keys.push(`${q.id}_other`);
-    }
-    if (q.type === 'multiselect' && q.options?.some((o) => o.hasText)) {
-      keys.push(`${q.id}_other`);
-    }
-  }
-  return keys;
-}

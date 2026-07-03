@@ -2,7 +2,6 @@ import {
   QUESTIONS,
   PARTICIPANTS,
   getStudyDayForDate,
-  getAllAnswerKeys,
   formatAnswerForDisplay,
 } from './_config.js';
 import { getAllEntries } from './_storage.js';
@@ -16,18 +15,16 @@ function csvEscape(value) {
 }
 
 function buildCsv(allEntries) {
-  const answerKeys = getAllAnswerKeys();
   const headers = [
     'participant_id',
     'participant_name',
     'date',
     'study_day',
     'submitted_at',
-    ...answerKeys,
+    ...QUESTIONS.map((q) => q.id),
   ];
 
   const lines = [headers.join(',')];
-  const questionById = Object.fromEntries(QUESTIONS.map((q) => [q.id, q]));
 
   for (const p of PARTICIPANTS) {
     const userEntries = allEntries[p.id] || {};
@@ -42,12 +39,7 @@ function buildCsv(allEntries) {
         date,
         getStudyDayForDate(date) ?? '',
         entry.submittedAt || '',
-        ...answerKeys.map((key) => {
-          if (key.endsWith('_other')) return answers[key] ?? '';
-          const q = questionById[key];
-          if (!q) return answers[key] ?? '';
-          return formatAnswerForDisplay(q, answers[key], answers);
-        }),
+        ...QUESTIONS.map((q) => formatAnswerForDisplay(q, answers[q.id], answers)),
       ];
       lines.push(row.map(csvEscape).join(','));
     }
