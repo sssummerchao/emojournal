@@ -307,6 +307,22 @@ body.journal-body {
   color: var(--journal-primary-dark);
 }
 
+.journal-btn--danger {
+  background: #fff;
+  color: #b42318;
+  border: 1px solid #f5c2c0;
+}
+
+.journal-btn--danger:hover:not(:disabled) {
+  background: #fdecea;
+}
+
+.journal-btn--small {
+  padding: 6px 12px;
+  font-size: 0.82rem;
+  font-weight: 500;
+}
+
 .journal-btn--ghost {
   background: transparent;
   color: var(--journal-muted);
