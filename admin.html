@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Emotion Journal — Admin</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="journal.css">
+</head>
+<body class="journal-body">
+  <div class="journal-container journal-container--wide">
+    <div class="journal-topbar">
+      <header class="journal-header" style="margin-bottom:0;">
+        <h1>Journal Admin</h1>
+        <p>All participant logs</p>
+      </header>
+      <button type="button" id="export-csv" class="journal-btn journal-btn--primary">Export CSV</button>
+    </div>
+
+    <div class="journal-card">
+      <h2>Study overview</h2>
+      <div id="admin-progress"></div>
+    </div>
+
+    <div class="journal-card">
+      <h2>All entries</h2>
+      <div id="admin-content"><p class="journal-empty">Loading…</p></div>
+    </div>
+  </div>
+  <script type="module" src="admin.js"></script>
+</body>
+</html>

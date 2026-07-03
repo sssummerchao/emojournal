@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Emotion Journal — Participant 3</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="journal.css">
+</head>
+<body class="journal-body" data-participant="p3">
+  <div class="journal-container">
+    <div class="journal-topbar">
+      <div>
+        <h1 style="margin:0;font-size:1.4rem;">Emotion Journal</h1>
+        <span class="journal-topbar-user" id="user-label"></span>
+      </div>
+    </div>
+
+    <div class="journal-card">
+      <h2>Your progress</h2>
+      <div class="journal-progress">
+        <div class="journal-stat">
+          <span class="journal-stat-value" id="stat-day">—</span>
+          <span class="journal-stat-label">Current day</span>
+        </div>
+        <div class="journal-stat">
+          <span class="journal-stat-value" id="stat-remaining">—</span>
+          <span class="journal-stat-label">Days remaining</span>
+        </div>
+        <div class="journal-stat">
+          <span class="journal-stat-value" id="stat-completed">—</span>
+          <span class="journal-stat-label">Entries completed</span>
+        </div>
+      </div>
+      <div id="study-status" class="journal-status journal-status--active"></div>
+    </div>
+
+    <div class="journal-card" id="today-card">
+      <h2 id="today-heading">Today's entry</h2>
+      <div id="submitted-banner" class="journal-submitted-banner" hidden></div>
+      <form id="journal-form">
+        <div id="questions-container"></div>
+        <div id="form-message" class="journal-form-message" hidden></div>
+        <div class="journal-actions">
+          <button type="submit" id="submit-btn" class="journal-btn journal-btn--primary">Submit</button>
+        </div>
+      </form>
+    </div>
+
+    <div class="journal-card">
+      <h2>Past entries</h2>
+      <div id="history-calendar"></div>
+      <div id="history-detail" class="journal-history-detail" hidden></div>
+    </div>
+  </div>
+  <script type="module" src="app.js"></script>
+</body>
+</html>
