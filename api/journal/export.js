@@ -21,10 +21,10 @@ function buildCsv(allEntries) {
     'date',
     'study_day',
     'submitted_at',
-    ...QUESTIONS.map((q) => q.id),
+    ...QUESTIONS.map((q) => q.label),
   ];
 
-  const lines = [headers.join(',')];
+  const lines = [headers.map(csvEscape).join(',')];
 
   for (const p of PARTICIPANTS) {
     const userEntries = allEntries[p.id] || {};
