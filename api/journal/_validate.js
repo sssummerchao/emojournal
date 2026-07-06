@@ -96,6 +96,15 @@ export function sanitizeAnswers(answers, date) {
         }
         cleaned[`${q.id}_other`] = otherText;
       }
+    } else if (q.type === 'scale') {
+      const val = String(raw).trim();
+      const num = parseInt(val, 10);
+      const min = q.min ?? 1;
+      const max = q.max ?? 7;
+      if (!Number.isFinite(num) || num < min || num > max) {
+        return { ok: false, error: `Please select a rating for: ${q.label}` };
+      }
+      cleaned[q.id] = String(num);
     } else {
       cleaned[q.id] = String(raw).trim().slice(0, 5000);
     }

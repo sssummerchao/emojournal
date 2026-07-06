@@ -15,8 +15,8 @@ export const ENTRY_START_DATE =
 
 /**
  * Daily questions — same every day.
- * Types: text, textarea, yesno, select, multiselect
- * showWhen: { questionId, value } — only shown when another answer matches
+ * Types: text, textarea, yesno, select, multiselect, scale
+ * showWhen: { questionId, value } or { questionId, values: [...] }
  */
 export const QUESTIONS = [
   {
@@ -27,71 +27,151 @@ export const QUESTIONS = [
   },
   {
     id: 'send_count',
-    label: 'If you use the device, roughly how many times did you use to send emotion?',
+    label: 'Approximately how many times did you send an emotion today?',
     type: 'text',
     placeholder: 'e.g. 3',
     showWhen: { questionId: 'device_used', value: 'yes' },
   },
   {
+    id: 'emotion_sent',
+    label: 'Which emotion did you send today?',
+    type: 'select',
+    showWhen: { questionId: 'device_used', value: 'yes' },
+    options: [
+      { value: 'positive', label: 'Positive' },
+      { value: 'negative', label: 'Negative' },
+      { value: 'both', label: 'Both' },
+      { value: 'neither', label: 'Neither' },
+    ],
+  },
+  {
     id: 'send_reason',
     label: 'What is the reason to send emotion?',
-    type: 'select',
+    type: 'multiselect',
     showWhen: { questionId: 'device_used', value: 'yes' },
     options: [
       { value: 'genuine_feeling', label: 'I wanted to share how I was genuinely feeling' },
       { value: 'care_support', label: 'I wanted to show care or support for my partner' },
       { value: 'home_present', label: 'I wanted to signal that I was home / present' },
+      { value: 'responding_partner', label: "I was responding to my partner's emotion" },
       { value: 'habit', label: 'Out of habit or routine' },
-      { value: 'other', label: 'Other (brief description)', hasText: true },
+      { value: 'other', label: 'Other', hasText: true },
     ],
   },
   {
-    id: 'after_action',
-    label: 'What did you do after sending or receiving an emotion today? (Select all that apply)',
+    id: 'after_send_positive',
+    label: 'After sending a positive emotion today, what happened?',
     type: 'multiselect',
-    showWhen: { questionId: 'device_used', value: 'yes' },
+    showWhen: { questionId: 'emotion_sent', values: ['positive', 'both'] },
     options: [
-      { value: 'text_partner', label: 'Text your partner' },
-      { value: 'phone_video', label: 'Made a phone or video call' },
-      { value: 'see_in_person', label: 'Went to see my partner in person' },
-      {
-        value: 'changed_activity',
-        label: 'Changed what I was doing (e.g., paused work, took a break, checked in mentally)',
-      },
-      { value: 'ignored', label: 'Ignored it / did nothing differently' },
-      { value: 'think_of_person', label: 'Think of the person' },
-      { value: 'other', label: 'Other (please describe briefly)', hasText: true },
+      { value: 'relieved', label: 'I felt relieved' },
+      { value: 'reflected', label: 'I reflected on my emotions' },
+      { value: 'hoped_response', label: 'I hoped my partner would respond' },
+      { value: 'more_connected', label: 'I felt more connected to my partner' },
+      { value: 'nothing_changed', label: 'Nothing changed' },
+      { value: 'other', label: 'Other', hasText: true },
     ],
   },
   {
-    id: 'connected_emotion',
-    label: 'Which emotion state made you feel more emotionally connected to your partner?',
+    id: 'after_send_negative',
+    label: 'After sending a negative emotion today, what happened?',
+    type: 'multiselect',
+    showWhen: { questionId: 'emotion_sent', values: ['negative', 'both'] },
+    options: [
+      { value: 'relieved', label: 'I felt relieved' },
+      { value: 'reflected', label: 'I reflected on my emotions' },
+      { value: 'hoped_response', label: 'I hoped my partner would respond' },
+      { value: 'more_connected', label: 'I felt more connected to my partner' },
+      { value: 'nothing_changed', label: 'Nothing changed' },
+      { value: 'other', label: 'Other', hasText: true },
+    ],
+  },
+  {
+    id: 'emotion_received',
+    label: 'Which emotion did you receive today?',
     type: 'select',
     showWhen: { questionId: 'device_used', value: 'yes' },
     options: [
       { value: 'positive', label: 'Positive' },
       { value: 'negative', label: 'Negative' },
-      { value: 'no_difference', label: 'No difference' },
+      { value: 'both', label: 'Both' },
+      { value: 'neither', label: 'Neither' },
     ],
   },
   {
-    id: 'changed_behavior_emotion',
-    label: 'Which emotion state led you to change what you were doing and do something else instead?',
+    id: 'after_receive_positive',
+    label: 'After receiving a positive emotion today, what happened?',
+    type: 'multiselect',
+    showWhen: { questionId: 'emotion_received', values: ['positive', 'both'] },
+    options: [
+      { value: 'thought_partner', label: 'I thought about my partner' },
+      { value: 'wanted_check_in', label: 'I wanted to check in' },
+      { value: 'changed_activity', label: 'I changed what I was doing and do something else' },
+      { value: 'reflected', label: 'I reflected on my own emotions' },
+      { value: 'more_connected', label: 'I felt more connected to my partner' },
+      { value: 'nothing_changed', label: 'Nothing changed' },
+      { value: 'other', label: 'Other', hasText: true },
+    ],
+  },
+  {
+    id: 'after_receive_negative',
+    label: 'After receiving a negative emotion today, what happened?',
+    type: 'multiselect',
+    showWhen: { questionId: 'emotion_received', values: ['negative', 'both'] },
+    options: [
+      { value: 'thought_partner', label: 'I thought about my partner' },
+      { value: 'wanted_check_in', label: 'I wanted to check in' },
+      { value: 'changed_activity', label: 'I changed what I was doing and do something else' },
+      { value: 'reflected', label: 'I reflected on my own emotions' },
+      { value: 'more_connected', label: 'I felt more connected to my partner' },
+      { value: 'nothing_changed', label: 'Nothing changed' },
+      { value: 'other', label: 'Other', hasText: true },
+    ],
+  },
+  {
+    id: 'greater_impact',
+    label: 'Overall, which emotion had the greater impact on you today?',
     type: 'select',
     showWhen: { questionId: 'device_used', value: 'yes' },
     options: [
       { value: 'positive', label: 'Positive' },
       { value: 'negative', label: 'Negative' },
-      { value: 'no_difference', label: 'No difference' },
+      { value: 'both_equally', label: 'Both equally' },
+      { value: 'neither', label: 'Neither' },
     ],
   },
   {
-    id: 'stood_out',
-    label:
-      'Is there any moment of using the device that stood out to you today? Or did anything unusual happen? Please describe.',
+    id: 'connected_likert',
+    label: "Today's interaction made me feel emotionally connected to my partner.",
+    type: 'scale',
+    min: 1,
+    max: 7,
+    showWhen: { questionId: 'device_used', value: 'yes' },
+  },
+  {
+    id: 'withheld_emotion',
+    label: 'Was there an emotion you wanted to send today but decided not to?',
+    type: 'select',
+    showWhen: { questionId: 'device_used', value: 'yes' },
+    options: [
+      { value: 'positive', label: 'Positive' },
+      { value: 'negative', label: 'Negative' },
+      { value: 'no', label: 'No' },
+    ],
+  },
+  {
+    id: 'withheld_reason',
+    label: 'What made you decide not to?',
+    type: 'text',
+    placeholder: 'Please describe',
+    showWhen: { questionId: 'withheld_emotion', values: ['positive', 'negative'] },
+  },
+  {
+    id: 'memorable',
+    label: "Was there anything memorable, unexpected, or meaningful about today's interaction? Please describe.",
     type: 'textarea',
     showWhen: { questionId: 'device_used', value: 'yes' },
-    placeholder: 'Describe what stood out or anything unusual that happened.',
+    placeholder: 'Please describe',
   },
 ];
 
@@ -114,6 +194,9 @@ export function getParticipantById(id) {
 export function isQuestionVisible(q, answers) {
   if (!q.showWhen) return true;
   const parent = answers?.[q.showWhen.questionId];
+  if (q.showWhen.values) {
+    return q.showWhen.values.includes(parent);
+  }
   return parent === q.showWhen.value;
 }
 
@@ -160,6 +243,10 @@ export function formatAnswerForDisplay(q, value, answers = {}) {
         return getOptionLabel(q, v);
       })
       .join('; ');
+  }
+
+  if (q.type === 'scale') {
+    return String(value);
   }
 
   return String(value);
