@@ -164,18 +164,25 @@ function getGateAnswerFrom(container) {
   return selected ? selected.dataset.value : '';
 }
 
+function isQuestionVisible(q, answers) {
+  if (!q.showWhen) return true;
+  const parent = answers?.[q.showWhen.questionId];
+  if (q.showWhen.values) {
+    return q.showWhen.values.includes(parent);
+  }
+  return parent === q.showWhen.value;
+}
+
 function isQuestionHidden(q, answers) {
-  if (!q.showWhen) return false;
-  return answers?.[q.showWhen.questionId] !== q.showWhen.value;
+  return !isQuestionVisible(q, answers);
 }
 
 function updateVisibilityIn(container, questions) {
-  const gate = getGateAnswerFrom(container);
+  const answers = collectAnswersFrom(container, questions);
   questions.forEach((q) => {
-    if (!q.showWhen) return;
     const field = container.querySelector(`[data-question-id="${q.id}"]`);
     if (!field) return;
-    const hidden = gate !== q.showWhen.value;
+    const hidden = isQuestionHidden(q, answers);
     field.hidden = hidden;
     field.classList.toggle('journal-field--hidden', hidden);
   });
@@ -245,6 +252,7 @@ function renderQuestionInto(container, q, answers, editable) {
       input.checked = value === opt.value;
       input.addEventListener('change', () => {
         toggleOtherInput(wrap, opt.hasText && input.checked);
+        updateVisibilityIn(container, state.questions);
       });
       row.appendChild(input);
       const span = document.createElement('span');
@@ -303,6 +311,33 @@ function renderQuestionInto(container, q, answers, editable) {
       otherInput.hidden = !selected.includes('other');
       wrap.appendChild(otherInput);
     }
+  } else if (q.type === 'scale') {
+    const min = q.min ?? 1;
+    const max = q.max ?? 7;
+    const group = document.createElement('div');
+    group.className = 'journal-scale';
+    group.setAttribute('role', 'group');
+
+    for (let n = min; n <= max; n += 1) {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'journal-scale-btn';
+      btn.textContent = String(n);
+      btn.dataset.value = String(n);
+      btn.disabled = !editable;
+      if (String(value) === String(n)) btn.classList.add('selected');
+      btn.addEventListener('click', () => {
+        group.querySelectorAll('.journal-scale-btn').forEach((b) => b.classList.remove('selected'));
+        btn.classList.add('selected');
+      });
+      group.appendChild(btn);
+    }
+
+    const labels = document.createElement('div');
+    labels.className = 'journal-scale-labels';
+    labels.innerHTML = '<span>1 — Not at all connected</span><span>7 — Very connected</span>';
+    wrap.appendChild(group);
+    wrap.appendChild(labels);
   } else if (q.type === 'textarea') {
     const ta = document.createElement('textarea');
     ta.id = `q-${container.id || 'form'}-${q.id}`;
@@ -361,6 +396,9 @@ function collectAnswersFrom(container, questions) {
       answers[q.id] = checked.length ? JSON.stringify(checked) : '';
       const otherInput = field.querySelector('.journal-other-input');
       answers[`${q.id}_other`] = otherInput && !otherInput.hidden ? otherInput.value : '';
+    } else if (q.type === 'scale') {
+      const selected = field.querySelector('.journal-scale-btn.selected');
+      answers[q.id] = selected ? selected.dataset.value : '';
     } else {
       const input = field.querySelector('input[type="text"], textarea');
       answers[q.id] = input ? input.value : '';
@@ -377,7 +415,7 @@ function validateRequiredAnswers(questions, answers) {
 
   for (const q of questions) {
     if (q.id === 'device_used') continue;
-    if (q.showWhen && gate !== q.showWhen.value) continue;
+    if (!isQuestionVisible(q, answers)) continue;
 
     const value = answers[q.id];
     if (value == null || String(value).trim() === '') {
@@ -446,13 +484,11 @@ function renderTimeline() {
     const d = parseIsoDate(iso);
     const dayNum = getStudyDay(iso);
     const isSelected = iso === selectedDate;
-    const isToday = iso === state.today;
     const hasEntry = !!entriesByDate[iso];
     const isFuture = iso > state.today;
 
     let cls = 'journal-timeline-day';
     if (isSelected) cls += ' journal-timeline-day--selected';
-    if (isToday) cls += ' journal-timeline-day--today';
     if (hasEntry) cls += ' journal-timeline-day--has-entry';
     if (isFuture) cls += ' journal-timeline-day--future';
 

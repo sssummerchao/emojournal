@@ -48,6 +48,13 @@ function renderProgress(progress) {
   `;
 }
 
+function isQuestionVisibleForAnswers(q, answers) {
+  if (!q.showWhen) return true;
+  const parent = answers?.[q.showWhen.questionId];
+  if (q.showWhen.values) return q.showWhen.values.includes(parent);
+  return parent === q.showWhen.value;
+}
+
 function formatAnswerLabel(q, answers) {
   const value = answers?.[q.id];
   if (value == null || String(value).trim() === '') return '';
@@ -88,7 +95,7 @@ function renderParticipantBlock(participant, questions) {
     tableRows = participant.rows
       .map((row) => {
         const answerCells = questions.map((q) => {
-          if (row.answers?.device_used === 'no' && q.showWhen) return '';
+          if (!isQuestionVisibleForAnswers(q, row.answers)) return '';
           return formatAnswerLabel(q, row.answers);
         });
         return `

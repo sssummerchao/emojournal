@@ -594,14 +594,6 @@ label.journal-choice-row,
   color: #1f7a4f;
 }
 
-.journal-timeline-day--today:not(.journal-timeline-day--selected) {
-  border-color: var(--journal-primary);
-}
-
-.journal-timeline-day--today.journal-timeline-day--has-entry:not(.journal-timeline-day--selected) {
-  border-color: var(--journal-success);
-}
-
 .journal-timeline-day--selected {
   background: #fff;
   border: 3px solid var(--journal-primary);
