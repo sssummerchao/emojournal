@@ -55,6 +55,7 @@ export const QUESTIONS = [
       { value: 'home_present', label: 'I wanted to signal that I was home / present' },
       { value: 'responding_partner', label: "I was responding to my partner's emotion" },
       { value: 'habit', label: 'Out of habit or routine' },
+      { value: 'did_not_send', label: "I didn't send emotion today" },
       { value: 'other', label: 'Other', hasText: true },
     ],
   },
