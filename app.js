@@ -157,7 +157,7 @@ function updateSubmitLabel() {
   if (!submitBtn) return;
   const entry = getEntryForDate(selectedDate);
   const hasSubmitted = entry && hasAnswers(entry.answers);
-  submitBtn.textContent = hasSubmitted ? 'Update entry' : 'Submit';
+  submitBtn.textContent = hasSubmitted ? 'Update entry' : 'Save entry';
   submitBtn.disabled = !canEditSelected();
 }
 
