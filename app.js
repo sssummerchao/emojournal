@@ -23,6 +23,7 @@ let state = null;
 let selectedDate = null;
 let timelineWindowStart = 0;
 let studyDates = [];
+let hasUnsavedChanges = false;
 
 if (!participantId) {
   document.body.innerHTML = '<p style="padding:24px;">Invalid journal link.</p>';
@@ -31,6 +32,16 @@ if (!participantId) {
 }
 
 let messageTimer = null;
+
+function setUnsavedChanges(value) {
+  hasUnsavedChanges = value;
+}
+
+window.addEventListener('beforeunload', (event) => {
+  if (!hasUnsavedChanges) return;
+  event.preventDefault();
+  event.returnValue = '';
+});
 
 function showMessage(el, text, type = 'error', autoHideMs = 0) {
   if (messageTimer) {
@@ -231,6 +242,7 @@ function renderQuestionInto(container, q, answers, editable) {
       btn.addEventListener('click', () => {
         group.querySelectorAll('.journal-yesno-btn').forEach((b) => b.classList.remove('selected'));
         btn.classList.add('selected');
+        setUnsavedChanges(true);
         updateVisibilityIn(container, state.questions);
       });
       group.appendChild(btn);
@@ -252,6 +264,7 @@ function renderQuestionInto(container, q, answers, editable) {
       input.checked = value === opt.value;
       input.addEventListener('change', () => {
         toggleOtherInput(wrap, opt.hasText && input.checked);
+        setUnsavedChanges(true);
         updateVisibilityIn(container, state.questions);
       });
       row.appendChild(input);
@@ -287,6 +300,7 @@ function renderQuestionInto(container, q, answers, editable) {
       input.disabled = !editable;
       input.checked = selected.includes(opt.value);
       input.addEventListener('change', () => {
+        setUnsavedChanges(true);
         if (opt.hasText) {
           const otherInput = wrap.querySelector('.journal-other-input');
           if (otherInput) otherInput.hidden = !wrap.querySelector('input[value="other"]:checked');
@@ -329,6 +343,7 @@ function renderQuestionInto(container, q, answers, editable) {
       btn.addEventListener('click', () => {
         group.querySelectorAll('.journal-scale-btn').forEach((b) => b.classList.remove('selected'));
         btn.classList.add('selected');
+        setUnsavedChanges(true);
       });
       group.appendChild(btn);
     }
@@ -457,10 +472,15 @@ function renderEntryForm() {
   updateEntryDateLabel();
   updateSubmittedBanner();
   updateSubmitLabel();
+  setUnsavedChanges(false);
 }
 
 function selectDate(iso) {
   if (!studyDates.includes(iso)) return;
+  if (iso !== selectedDate && hasUnsavedChanges) {
+    const discard = window.confirm('You have unsaved answers. If you leave this date, your changes will be lost. Continue?');
+    if (!discard) return;
+  }
   selectedDate = iso;
   formMessage.hidden = true;
   ensureDateVisible(iso);
@@ -577,6 +597,14 @@ async function saveEntry(date, answers, messageEl, submitButton) {
 
 timelinePrev?.addEventListener('click', () => shiftTimelineWeek(-1));
 timelineNext?.addEventListener('click', () => shiftTimelineWeek(1));
+
+journalForm.addEventListener('input', () => {
+  setUnsavedChanges(true);
+});
+
+journalForm.addEventListener('change', () => {
+  setUnsavedChanges(true);
+});
 
 journalForm.addEventListener('submit', async (e) => {
   e.preventDefault();
